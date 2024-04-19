@@ -180,10 +180,10 @@ parameter CONF_STR = {
         "F,COLBINROM,Load CART;",
         "F,COLBINROM,Load Ext. ROM;",
 		  `SEP
-        "S0,DSK,Load Floppy 1;",
-        "S1,DSK,Load Floppy 2;",
-        "S2,DDP,Load Tape 1;",
-        "S3,DDP,Load Tape 2;",
+        "S0U,DSK,Load Floppy 1;",
+        "S1U,DSK,Load Floppy 2;",
+        "S2U,DDP,Load Tape 1;",
+        "S3U,DDP,Load Tape 2;",
 		  `SEP
         "O79,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%;",
         "O3,Joysticks swap,No,Yes;",
@@ -311,9 +311,19 @@ user_io #(
     .key_code(key_code),
     .key_pressed(key_pressed),
     .key_extended(key_extended),
-
 	 
-	.sd_sdhc             (0),
+`ifdef USE_HDMI
+	.i2c_start      (i2c_start      ),
+	.i2c_read       (i2c_read       ),
+	.i2c_addr       (i2c_addr       ),
+	.i2c_subaddr    (i2c_subaddr    ),
+	.i2c_dout       (i2c_dout       ),
+	.i2c_din        (i2c_din        ),
+	.i2c_ack        (i2c_ack        ),
+	.i2c_end        (i2c_end        ),
+`endif
+	 
+	.sd_sdhc             (1),
 	.sd_lba              (sd_lba_mux),
 	.sd_rd               (sd_rd),
 	.sd_wr               (sd_wr),
@@ -354,16 +364,12 @@ data_io #(.ROM_DIRECT_UPLOAD(DIRECT_UPLOAD), .USE_QSPI(QSPI)) data_io(
 `ifdef NO_DIRECT_UPLOAD
 	.SPI_SS4       ( 1'b1         ),
 `else
-	.SPI_SS4       ( SPI_SS4      ),
+//	.SPI_SS4       ( SPI_SS4      ),
 `endif
 	.SPI_DI        ( SPI_DI       ),
-`ifdef VIVADO
-	.SPI_DO        ( spi_do_dio   ),
-	.SPI_DO_IN     ( SPI_DO_IN    ),
-`else
 	.SPI_DO        ( SPI_DO       ),
-`endif
 	.clkref_n      ( 1'b0         ),
+	.ioctl_fileext       (img_ext),
 	.ioctl_download( ioctl_download  ),
 	.ioctl_index   ( ioctl_index  ),
 	.ioctl_wr      ( ioctl_wr     ),
@@ -552,11 +558,9 @@ spramv #(15) extended_rom
 ////////////////  Console  ////////////////////////
 
 wire [10:0] audio;
-wire DAC_L = {audio,audio[10:5]};
-wire DAC_R = {audio,audio[10:5]};
+wire [15:0] DAC_L = {audio,audio[10:5]};
+wire [15:0] DAC_R = {audio,audio[10:5]};
 
-wire[15:0] mix = { audio [9:0], audio[10:5] };
-//i2s i2s(CLOCK_27, { I2S_DATA, I2S_LRCK, I2S_BCK }, mix, mix); // clock should be 50 MHz
 
 wire CLK_VIDEO = clk_sys;
 

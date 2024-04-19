@@ -93,6 +93,18 @@ module sidi128_top (
 
 );
 
+`ifdef NO_DIRECT_UPLOAD
+localparam bit DIRECT_UPLOAD = 0;
+`else
+localparam bit DIRECT_UPLOAD = 1;
+`endif
+
+`ifdef USE_QSPI
+localparam bit QSPI = 1;
+assign QDAT = 4'hZ;
+`else
+localparam bit QSPI = 0;
+`endif
 
 `ifdef VGA_8BIT
 localparam VGA_BITS = 8;
@@ -100,14 +112,19 @@ localparam VGA_BITS = 8;
 localparam VGA_BITS = 6;
 `endif
 
-`ifdef BIG_OSD
-localparam bit BIG_OSD = 1;
-localparam SEP = "-;";
+`ifdef USE_HDMI
+localparam bit HDMI = 1;
 `else
-localparam bit BIG_OSD = 0;
-localparam SEP = "";
+localparam bit HDMI = 0;
 `endif
 
+`ifdef BIG_OSD
+localparam bit BIG_OSD = 1;
+`define SEP "-;",
+`else
+localparam bit BIG_OSD = 0;
+`define SEP
+`endif
 
 
 guest_top guest
