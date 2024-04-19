@@ -42,7 +42,7 @@ set_global_assignment -name DEVICE 10CL120YF484I7G
 set_global_assignment -name TOP_LEVEL_ENTITY sidi128_top
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 17.1.0
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "10:55:32  APRIL 19, 2024"
-set_global_assignment -name LAST_QUARTUS_VERSION "17.0.0 Lite Edition"
+set_global_assignment -name LAST_QUARTUS_VERSION "22.1std.2 Lite Edition"
 set_global_assignment -name AUTO_MERGE_PLLS OFF
 set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
 set_global_assignment -name NUM_PARALLEL_PROCESSORS ALL
@@ -285,13 +285,24 @@ set_global_assignment -name VERILOG_MACRO "USE_HDMI=1"
 set_global_assignment -name VERILOG_MACRO "CARTOPTS=1"
 set_global_assignment -name VERILOG_MACRO "DEMISTIFY=1"
 set_global_assignment -name PRE_FLOW_SCRIPT_FILE "quartus_sh:../build_id.tcl"
+set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
+set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
+set_global_assignment -name VERILOG_FILE "../mist-modules/spdif.v"
+set_global_assignment -name VERILOG_FILE "../mist-modules/sd_card.v"
+set_global_assignment -name QIP_FILE "../mist-modules/mist.qip"
+set_global_assignment -name VERILOG_FILE "../mist-modules/ide_fifo.v"
+set_global_assignment -name VERILOG_FILE "../mist-modules/ide.v"
+set_global_assignment -name VERILOG_FILE "../mist-modules/i2s.v"
+set_global_assignment -name VERILOG_FILE "../mist-modules/i2c_master.v"
+set_global_assignment -name VERILOG_FILE "../mist-modules/data_io.v"
+set_global_assignment -name VHDL_FILE "../mist-modules/dac.vhd"
+set_global_assignment -name VERILOG_FILE "../mist-modules/cdda_fifo.v"
+set_global_assignment -name VERILOG_FILE "../mist-modules/arcade_inputs.v"
+set_global_assignment -name QIP_FILE "../mist-modules/mist_core.qip"
 set_global_assignment -name SYSTEMVERILOG_FILE SiDi128_top.sv
 set_global_assignment -name QIP_FILE ../files.qip
-set_global_assignment -name QIP_FILE ../sys/sys.qip
 set_global_assignment -name QIP_FILE ../DeMiSTify/controller/controller.qip
 set_global_assignment -name VHDL_FILE ../demistify_config_pkg.vhd
 set_global_assignment -name VHDL_FILE ../firmware/controller_rom1_byte.vhd
 set_global_assignment -name VHDL_FILE ../firmware/controller_rom2_byte.vhd
-set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
-set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

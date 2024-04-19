@@ -23,6 +23,7 @@ module sidi128_top (
 	output        HDMI_DE,
 	output        HDMI_SDA,
 	output        HDMI_SCL,
+	input         HDMI_INT,
 `endif
 
 	input         SPI_SCK,
@@ -74,6 +75,15 @@ module sidi128_top (
 	output        I2S_LRCK,
 	output        I2S_DATA,
 `endif
+`ifdef I2S_AUDIO_HDMI
+   output        HDMI_MCLK,
+   output        HDMI_BCK,
+   output        HDMI_LRCK,
+   output        HDMI_SDATA,
+`endif
+`ifdef SPDIF_AUDIO
+        output        SPDIF,
+`endif
 `ifdef USE_AUDIO_IN
 	input         AUDIO_IN,
 `endif
@@ -124,11 +134,12 @@ localparam bit BIG_OSD = 0;
 localparam SEP = "";
 `endif
 
-
+`ifdef USE_HDMI
+localparam bit USE_HDMI = 1;
+`endif
 
 guest_top guest
 (
- .CLOCK_27    (CLOCK_50),
  .*
 );
 

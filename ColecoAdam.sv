@@ -18,6 +18,7 @@
 //  with this program; if not, write to the Free Software Foundation, Inc.,
 //  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 //============================================================================
+`default_nettype none
 
 module guest_top
 #
@@ -27,44 +28,145 @@ module guest_top
    parameter  USE_REQ   = 0,
    parameter  TOT_DISKS = NUM_DISKS + NUM_TAPES
 )
-(       
-        output        LED,                                              
-        output        VGA_HS,
-        output        VGA_VS,
-//        output        AUDIO_L,
-//        output        AUDIO_R, 
-//		  output [15:0]  DAC_L, 
-//		  output [15:0]  DAC_R, 
-	    output        I2S_BCK,
-	    output        I2S_LRCK,
-	    output        I2S_DATA,
-        input         AUDIO_IN,
-        input         UART_RX,
-        output        UART_TX,
-        input         SPI_SCK,
-        output        SPI_DO,
-        input         SPI_DI,
-        input         SPI_SS2,
-        input         SPI_SS3,
-//		  input         SPI_SS4,
-        input         CONF_DATA0,
-        input         CLOCK_27,
-//        output  [5:0] VGA_R,
-//        output  [5:0] VGA_G,
-//        output  [5:0] VGA_B,
-		  
-		  output [12:0] SDRAM_A,
-		  inout  [15:0] SDRAM_DQ,
-		  output        SDRAM_DQML,
-        output        SDRAM_DQMH,
-        output        SDRAM_nWE,
-        output        SDRAM_nCAS,
-        output        SDRAM_nRAS,
-        output        SDRAM_nCS,
-        output  [1:0] SDRAM_BA,
-        output        SDRAM_CLK,
-        output        SDRAM_CKE
+(
+	output        LED,
+	output [VGA_BITS-1:0] VGA_R,
+	output [VGA_BITS-1:0] VGA_G,
+	output [VGA_BITS-1:0] VGA_B,
+	output        VGA_HS,
+	output        VGA_VS,
+	output        AUDIO_L,
+	output        AUDIO_R,
+	input         SPI_SCK,
+`ifdef VIVADO
+	output 		  CLOCK_27_buff,
+	input         SPI_DO_IN,
+	output        SPI_DO,	
+`else
+	inout         SPI_DO,
+`endif
+	input         SPI_DI,
+	input         SPI_SS2,
+	input         SPI_SS3,
+	input         CONF_DATA0,
+	input         CLOCK_27,
+`ifdef USE_CLOCK_50
+	input         CLOCK_50,
+`endif
+
+`ifdef USE_HDMI
+	output        HDMI_RST,
+	output  [7:0] HDMI_R,
+	output  [7:0] HDMI_G,
+	output  [7:0] HDMI_B,
+	output        HDMI_HS,
+	output        HDMI_VS,
+	output        HDMI_PCLK,
+	output        HDMI_DE,
+	inout         HDMI_SDA,
+	inout         HDMI_SCL,
+	input         HDMI_INT,
+`endif
+
+`ifdef USE_QSPI
+	input         QSCK,
+	input         QCSn,
+	inout   [3:0] QDAT,
+`else
+	input         SPI_SS4,
+`endif
+
+	output [12:0] SDRAM_A,
+	inout  [15:0] SDRAM_DQ,
+	output        SDRAM_DQML,
+	output        SDRAM_DQMH,
+	output        SDRAM_nWE,
+	output        SDRAM_nCAS,
+	output        SDRAM_nRAS,
+	output        SDRAM_nCS,
+	output  [1:0] SDRAM_BA,
+	output        SDRAM_CLK,
+	output        SDRAM_CKE,
+
+`ifdef DUAL_SDRAM
+	output [12:0] SDRAM2_A,
+	inout  [15:0] SDRAM2_DQ,
+	output        SDRAM2_DQML,
+	output        SDRAM2_DQMH,
+	output        SDRAM2_nWE,
+	output        SDRAM2_nCAS,
+	output        SDRAM2_nRAS,
+	output        SDRAM2_nCS,
+	output  [1:0] SDRAM2_BA,
+	output        SDRAM2_CLK,
+	output        SDRAM2_CKE,
+`endif
+
+`ifdef I2S_AUDIO
+	output        I2S_BCK,
+	output        I2S_LRCK,
+	output        I2S_DATA,
+`endif
+`ifdef I2S_AUDIO_HDMI
+	output        HDMI_MCLK,
+	output        HDMI_BCK,
+	output        HDMI_LRCK,
+	output        HDMI_SDATA,
+`endif
+`ifdef SPDIF_AUDIO
+	output        SPDIF,
+`endif
+
+	input         UART_RX,
+	output        UART_TX
+
 );
+
+`ifdef NO_DIRECT_UPLOAD
+localparam bit DIRECT_UPLOAD = 0;
+`else
+localparam bit DIRECT_UPLOAD = 1;
+`endif
+
+`ifdef USE_QSPI
+localparam bit QSPI = 1;
+assign QDAT = 4'hZ;
+`else
+localparam bit QSPI = 0;
+`endif
+
+`ifdef VGA_8BIT
+localparam VGA_BITS = 8;
+`else
+localparam VGA_BITS = 6;
+`endif
+
+`ifdef USE_HDMI
+localparam bit HDMI = 1;
+assign HDMI_RST = 1'b1;
+`else
+localparam bit HDMI = 0;
+`endif
+
+`ifdef BIG_OSD
+localparam bit BIG_OSD = 1;
+`define SEP "-;",
+`else
+localparam bit BIG_OSD = 0;
+`define SEP
+`endif
+
+`ifdef VIVADO
+wire spi_do_uio;
+wire spi_do_dio;
+assign SPI_DO = CONF_DATA0 ? spi_do_dio : spi_do_uio; // DO comes from user_io when CONF_DATA0 is low
+`endif
+
+`ifdef VIVADO
+`include "build_id.vh" 
+`else
+`include "build_id.v" 
+`endif
 
 
 assign LED   = |sd_rd || ioctl_download; 
@@ -77,14 +179,17 @@ parameter CONF_STR = {
         "Adam;;",
         "F,COLBINROM,Load CART;",
         "F,COLBINROM,Load Ext. ROM;",
+		  `SEP
         "S0,DSK,Load Floppy 1;",
         "S1,DSK,Load Floppy 2;",
         "S2,DDP,Load Tape 1;",
         "S3,DDP,Load Tape 2;",
+		  `SEP
         "O79,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%;",
         "O3,Joysticks swap,No,Yes;",
         "O45,RAM Size,1KB,8KB,SGM;",
         "OC,Mode,Computer,Console;",
+		  `SEP
         "T0,Reset;",
         "V,v",`BUILD_DATE
 };
@@ -144,7 +249,6 @@ wire        img_readonly;
 
 wire [63:0] img_size;
 
-wire [10:0] ps2_key;
 wire ypbpr;
 wire [31:0] img_ext;
 
@@ -177,7 +281,17 @@ always @(posedge clk_sys) begin
 
 end
 
-user_io #(.STRLEN($size(CONF_STR)>>3),.SD_IMAGES(TOT_DISKS)) user_io
+
+wire [10:0] ps2_key ={key_strobe,key_pressed,key_extended,key_code};
+wire        key_pressed;
+wire [7:0]  key_code;
+wire        key_strobe;
+wire        key_extended;
+
+user_io #(
+          .STRLEN($size(CONF_STR)>>3),
+			 .SD_IMAGES(TOT_DISKS),
+			 .FEATURES(32'h8 | (QSPI << 2) | (BIG_OSD << 13) | (HDMI << 14))) user_io
 (
 	.clk_sys             (clk_sys          ),
    .clk_sd              (clk_sys          ),
@@ -193,8 +307,12 @@ user_io #(.STRLEN($size(CONF_STR)>>3),.SD_IMAGES(TOT_DISKS)) user_io
 	.no_csync            (),
 	.buttons             (buttons),
 	
-	.ps2_key             (ps2_key),
+    .key_strobe(key_strobe),
+    .key_code(key_code),
+    .key_pressed(key_pressed),
+    .key_extended(key_extended),
 
+	 
 	.sd_sdhc             (0),
 	.sd_lba              (sd_lba_mux),
 	.sd_rd               (sd_rd),
@@ -213,21 +331,62 @@ user_io #(.STRLEN($size(CONF_STR)>>3),.SD_IMAGES(TOT_DISKS)) user_io
 	.joystick_1          (joy1          )
 );
 
-data_io data_io
-(
-	.clk_sys             (clk_sys),
-	.SPI_SCK             (SPI_SCK),
-	.SPI_DI              (SPI_DI),
-	.SPI_SS2             (SPI_SS2),
+`ifdef USE_HDMI
+wire        i2c_start;
+wire        i2c_read;
+wire  [6:0] i2c_addr;
+wire  [7:0] i2c_subaddr;
+wire  [7:0] i2c_dout;
+wire  [7:0] i2c_din;
+wire        i2c_ack;
+wire        i2c_end;
+`endif
 
-	.clkref_n            (),
-	.ioctl_fileext       (img_ext),
-	.ioctl_wr            (ioctl_wr),
-	.ioctl_addr          (ioctl_addr),
-	.ioctl_dout          (ioctl_dout),
-	.ioctl_download      (ioctl_download),
-	.ioctl_index         (ioctl_index)
+data_io #(.ROM_DIRECT_UPLOAD(DIRECT_UPLOAD), .USE_QSPI(QSPI)) data_io(
+	.clk_sys       ( clk_sys      ),
+	.SPI_SCK       ( SPI_SCK      ),
+	.SPI_SS2       ( SPI_SS2      ),
+`ifdef USE_QSPI
+	.QSCK          ( QSCK         ),
+	.QCSn          ( QCSn         ),
+	.QDAT          ( QDAT         ),
+`endif
+`ifdef NO_DIRECT_UPLOAD
+	.SPI_SS4       ( 1'b1         ),
+`else
+	.SPI_SS4       ( SPI_SS4      ),
+`endif
+	.SPI_DI        ( SPI_DI       ),
+`ifdef VIVADO
+	.SPI_DO        ( spi_do_dio   ),
+	.SPI_DO_IN     ( SPI_DO_IN    ),
+`else
+	.SPI_DO        ( SPI_DO       ),
+`endif
+	.clkref_n      ( 1'b0         ),
+	.ioctl_download( ioctl_download  ),
+	.ioctl_index   ( ioctl_index  ),
+	.ioctl_wr      ( ioctl_wr     ),
+	.ioctl_addr    ( ioctl_addr   ),
+	.ioctl_dout    ( ioctl_dout   )
 );
+
+//
+//data_io data_io
+//(
+//	.clk_sys             (clk_sys),
+//	.SPI_SCK             (SPI_SCK),
+//	.SPI_DI              (SPI_DI),
+//	.SPI_SS2             (SPI_SS2),
+//
+//	.clkref_n            (),
+//	.ioctl_fileext       (img_ext),
+//	.ioctl_wr            (ioctl_wr),
+//	.ioctl_addr          (ioctl_addr),
+//	.ioctl_dout          (ioctl_dout),
+//	.ioctl_download      (ioctl_download),
+//	.ioctl_index         (ioctl_index)
+//);
 
 
 
@@ -393,8 +552,8 @@ spramv #(15) extended_rom
 ////////////////  Console  ////////////////////////
 
 wire [10:0] audio;
-//assign DAC_L = {audio,audio[10:5]};
-//assign DAC_R = {audio,audio[10:5]};
+wire DAC_L = {audio,audio[10:5]};
+wire DAC_R = {audio,audio[10:5]};
 
 wire[15:0] mix = { audio [9:0], audio[10:5] };
 //i2s i2s(CLOCK_27, { I2S_DATA, I2S_LRCK, I2S_BCK }, mix, mix); // clock should be 50 MHz
@@ -573,32 +732,137 @@ always @(posedge CLK_VIDEO) begin
         if(~hs_o & ~hsync) vs_o <= ~vsync;
 end
 
-video_mixer #(.LINE_LENGTH(284), .HALF_DEPTH(0)) video_mixer
-(
-	.clk_sys(clk_sys),
-	.ce_pix(ce_5m3),
-	.ce_pix_actual(ce_5m3),
-	.SPI_SCK(SPI_SCK),
-	.SPI_SS3(SPI_SS3),
-	.SPI_DI(SPI_DI),
-	.scanlines(forced_scandoubler ? 2'b00 : {status[9:7] == 3, status[9:7] == 2}),
-	.scandoubler_disable(forced_scandoubler),
-	.hq2x(status[9:7]==1),
-	.ypbpr(ypbpr),
-	.ypbpr_full(1),
-	.R(R[7:2]),
-	.G(G[7:2]),
-	.B(B[7:2]),
-	.mono(0),
-	.HSync(hs_o),
-	.VSync(vs_o),
-	.line_start(hblank),
-	.VGA_R(VGA_R),
-	.VGA_G(VGA_G),
-	.VGA_B(VGA_B),
-	.VGA_VS(VGA_VS),
-	.VGA_HS(VGA_HS)
+
+`ifdef I2S_AUDIO
+i2s i2s (
+	.reset(1'b0),
+	.clk(clk_sys),
+	.clk_rate(32'd42_660_000),
+
+	.sclk(I2S_BCK),
+	.lrclk(I2S_LRCK),
+	.sdata(I2S_DATA),
+
+	.left_chan(DAC_L),
+	.right_chan(DAC_R)
 );
+`ifdef I2S_AUDIO_HDMI
+assign HDMI_MCLK = 0;
+always @(posedge clk_sys) begin
+	HDMI_BCK <= I2S_BCK;
+	HDMI_LRCK <= I2S_LRCK;
+	HDMI_SDATA <= I2S_DATA;
+end
+`endif
+`endif
+
+`ifdef SPDIF_AUDIO
+spdif spdif
+(
+	.clk_i(clk_sys),
+	.rst_i(reset),
+	.clk_rate_i(32'd42_660_000),
+	.spdif_o(SPDIF),
+	.sample_i({DAC_R, DAC_L})
+);
+`endif
+
+`ifdef USE_HDMI
+i2c_master #(42_660_000) i2c_master (
+	.CLK         (clk_sys),
+	.I2C_START   (i2c_start),
+	.I2C_READ    (i2c_read),
+	.I2C_ADDR    (i2c_addr),
+	.I2C_SUBADDR (i2c_subaddr),
+	.I2C_WDATA   (i2c_dout),
+	.I2C_RDATA   (i2c_din),
+	.I2C_END     (i2c_end),
+	.I2C_ACK     (i2c_ack),
+
+	//I2C bus
+	.I2C_SCL     (HDMI_SCL),
+	.I2C_SDA     (HDMI_SDA)
+);
+
+mist_video #(.COLOR_DEPTH(8), .SD_HCNT_WIDTH(9), .USE_BLANKS(1), .OUT_COLOR_DEPTH(8), .BIG_OSD(BIG_OSD), .VIDEO_CLEANER(1)) hdmi_video(
+	.clk_sys        ( clk_sys          ),
+	.SPI_SCK        ( SPI_SCK          ),
+	.SPI_SS3        ( SPI_SS3          ),
+	.SPI_DI         ( SPI_DI           ),
+	.R              ( R                ),
+	.G              ( G                ),
+	.B              ( B                ),
+	.HBlank         ( hblank           ),
+	.VBlank         ( vblank           ),
+	.HSync          ( hsync            ),
+	.VSync          ( vsync            ),
+	.VGA_R          ( HDMI_R           ),
+	.VGA_G          ( HDMI_G           ),
+	.VGA_B          ( HDMI_B           ),
+	.VGA_VS         ( HDMI_VS          ),
+	.VGA_HS         ( HDMI_HS          ),
+	.VGA_DE         ( HDMI_DE          ),
+	.ce_divider     ( 3'd7             ),
+	.scandoubler_disable( 1'b0         ),
+	.scanlines      ( forced_scandoubler ? 2'b00 : {status[9:7] == 3, status[9:7] == 2}),
+	.ypbpr          ( 1'b0             ),
+	.no_csync       ( 1'b1             )
+	);
+
+assign HDMI_PCLK = clk_sys;
+
+`endif
+
+mist_video #(.COLOR_DEPTH(8), .SD_HCNT_WIDTH(9), .USE_BLANKS(1'b1), .OUT_COLOR_DEPTH(VGA_BITS), .BIG_OSD(BIG_OSD)) mist_video(
+	.clk_sys        ( clk_sys          ),
+	.SPI_SCK        ( SPI_SCK          ),
+	.SPI_SS3        ( SPI_SS3          ),
+	.SPI_DI         ( SPI_DI           ),
+	.R              ( R                ),
+	.G              ( G                ),
+	.B              ( B                ),
+	.HBlank         ( hblank           ),
+	.VBlank         ( vblank           ),
+	.HSync          ( hsync            ),
+	.VSync          ( vsync            ),
+	.VGA_R          ( VGA_R            ),
+	.VGA_G          ( VGA_G            ),
+	.VGA_B          ( VGA_B            ),
+	.VGA_VS         ( VGA_VS           ),
+	.VGA_HS         ( VGA_HS           ),
+	.ce_divider     ( 3'd7             ),
+	.scandoubler_disable( forced_scandoubler ),
+	.scanlines      ( forced_scandoubler ? 2'b00 : {status[9:7] == 3, status[9:7] == 2} ),
+	.ypbpr          ( ypbpr            )
+);
+
+
+//video_mixer #(.LINE_LENGTH(284), .HALF_DEPTH(0)) video_mixer
+//(
+//	.clk_sys(clk_sys),
+//	.ce_pix(ce_5m3),
+//	.ce_pix_actual(ce_5m3),
+//	.SPI_SCK(SPI_SCK),
+//	.SPI_SS3(SPI_SS3),
+//	.SPI_DI(SPI_DI),
+//	.scanlines(forced_scandoubler ? 2'b00 : {status[9:7] == 3, status[9:7] == 2}),
+//	.scandoubler_disable(forced_scandoubler),
+//	.hq2x(status[9:7]==1),
+//	.ypbpr(ypbpr),
+//	.ypbpr_full(1),
+//	.R(R[7:2]),
+//	.G(G[7:2]),
+//	.B(B[7:2]),
+//	.mono(0),
+//	.HSync(hs_o),
+//	.VSync(vs_o),
+//	.line_start(hblank),
+//	.VGA_R(VGA_R),
+//	.VGA_G(VGA_G),
+//	.VGA_B(VGA_B),
+//	.VGA_VS(VGA_VS),
+//	.VGA_HS(VGA_HS)
+//);
 
 dac #(16) dac_l (
    .clk_i        (clk_sys),

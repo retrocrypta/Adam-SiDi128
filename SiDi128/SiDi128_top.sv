@@ -1,16 +1,29 @@
 
 module sidi128_top (
-	input         CLOCK_27,
-`ifdef USE_CLOCK_50
-	input         CLOCK_50,
-`endif
-
 	output        LED,
 	output [VGA_BITS-1:0] VGA_R,
 	output [VGA_BITS-1:0] VGA_G,
 	output [VGA_BITS-1:0] VGA_B,
 	output        VGA_HS,
 	output        VGA_VS,
+	output        AUDIO_L,
+	output        AUDIO_R,
+	input         SPI_SCK,
+`ifdef VIVADO
+	output 		  CLOCK_27_buff,
+	input         SPI_DO_IN,
+	output        SPI_DO,	
+`else
+	inout         SPI_DO,
+`endif
+	input         SPI_DI,
+	input         SPI_SS2,
+	input         SPI_SS3,
+	input         CONF_DATA0,
+	input         CLOCK_27,
+`ifdef USE_CLOCK_50
+	input         CLOCK_50,
+`endif
 
 `ifdef USE_HDMI
 	output        HDMI_RST,
@@ -21,23 +34,16 @@ module sidi128_top (
 	output        HDMI_VS,
 	output        HDMI_PCLK,
 	output        HDMI_DE,
-	output        HDMI_SDA,
-	output        HDMI_SCL,
+	inout         HDMI_SDA,
+	inout         HDMI_SCL,
+	input         HDMI_INT,
 `endif
-
-	input         SPI_SCK,
-	inout         SPI_DO,
-	input         SPI_DI,
-	input         SPI_SS2,    // data_io
-	input         SPI_SS3,    // OSD
-	input         CONF_DATA0, // SPI_SS for user_io
 
 `ifdef USE_QSPI
 	input         QSCK,
 	input         QCSn,
 	inout   [3:0] QDAT,
-`endif
-`ifndef NO_DIRECT_UPLOAD
+`else
 	input         SPI_SS4,
 `endif
 
@@ -67,46 +73,24 @@ module sidi128_top (
 	output        SDRAM2_CKE,
 `endif
 
-	output        AUDIO_L,
-	output        AUDIO_R,
 `ifdef I2S_AUDIO
 	output        I2S_BCK,
 	output        I2S_LRCK,
 	output        I2S_DATA,
 `endif
-`ifdef USE_AUDIO_IN
-	input         AUDIO_IN,
+`ifdef I2S_AUDIO_HDMI
+	output        HDMI_MCLK,
+	output        HDMI_BCK,
+	output        HDMI_LRCK,
+	output        HDMI_SDATA,
 `endif
-`ifdef USE_EXTBUS	
-	output [23:0]  BUS_A = 24'b0,
-	inout  [15:0]  BUS_D = 16'b0,
-	inout          USER1,
-	inout          USER2,
-	inout          USER3,
-	inout          USER5,
-	inout          USER6,
-	inout          USER7,
-	inout          N41,
-	inout          N42,
-	inout          N43,
-	inout          N44,
-	inout          N45,
-	inout          N46,
-	inout          N47,
-	inout          N48,
-	output         BUS_nRESET,
-	output         BUS_nM1,
-	output         BUS_nMREQ,
-	output         BUS_nIORQ,
-	output         BUS_nRD,
-	output         BUS_nWR,
-	output         BUS_nRFSH,
-	output         BUS_nHALT,
-	output         BUS_nBUSAK,
-	output reg     BUS_CLK,
+`ifdef SPDIF_AUDIO
+	output        SPDIF,
 `endif
+
 	input         UART_RX,
 	output        UART_TX
+
 );
 
 
